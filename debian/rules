@@ -1,0 +1,42 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# get multiarch name
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+DESTDIR=$(CURDIR)/debian/gstreamer1.0-imx
+KHDRDIR=$(shell echo /usr/include/kernel-*-cubox-i)
+SARGS=--prefix=/usr --libdir=/usr/lib/$(DEB_HOST_MULTIARCH) --kernel-headers=$(KHDRDIR)
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	rm -rf build-*
+	rm -rf .waf*
+	rm -rf .lock*
+
+override_dh_auto_install:
+	./waf configure $(SARGS) --egl-platform=fb -o build-fb
+	./waf build -o build-fb
+	./waf install -o build-fb --destdir=$(DESTDIR)-fb
+#	./waf configure $(SARGS) --egl-platform=directfb -o build-dfb
+#	./waf build -o build-dfb
+#	./waf install -o build-dfb --destdir=$(DESTDIR)-dfb
+	./waf configure $(SARGS) --egl-platform=wayland -o build-wl
+	./waf build -o build-wl
+	./waf install -o build-wl --destdir=$(DESTDIR)-wl
+	./waf configure $(SARGS) --egl-platform=x11 -o build-x11
+	./waf build -o build-x11
+	./waf install -o build-x11 --destdir=$(DESTDIR)-x11
+
+override_dh_shlibdeps:
+	dh_shlibdeps -- --ignore-missing-info
