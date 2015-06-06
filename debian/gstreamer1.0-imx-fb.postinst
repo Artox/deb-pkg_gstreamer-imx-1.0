@@ -1,0 +1,30 @@
+#!/bin/sh -e
+
+# detect multiarch name
+DEB_HOST_MULTIARCH=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+# handle alternatives
+if [ "x$1" = "xconfigure" ]; then
+	update-alternatives \
+		--install /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx gst1.0-imx /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb 10 \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/libgstimxcommon.so.0.12.0 gst-imx-libgstimxcommon-so-x-y /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/libgstimxcommon.so.0.12.0 \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/libgstimxcommon.so.0 gst-imx-libgstimxcommon-so-x /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/libgstimxcommon.so.0 \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/libgstimxcommon.so gst-imx-libgstimxcommon-so /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/libgstimxcommon.so \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/libgstimxcompositor.so.0.12.0 gst-imx-libgstimxcompositor-so-x-y /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/libgstimxcompositor.so.0.12.0 \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/libgstimxcompositor.so.0 gst-imx-libgstimxcompositor-so-x /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/libgstimxcompositor.so.0 \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/libgstimxcompositor.so gst-imx-libgstimxcompositor-so /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/libgstimxcompositor.so \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/libgstimxblitter.so.0.12.0 gst-imx-libgstimxblitter-so-x-y /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/libgstimxblitter.so.0.12.0 \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/libgstimxblitter.so.0 gst-imx-libgstimxblitter-so-x /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/libgstimxblitter.so.0 \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/libgstimxblitter.so gst-imx-libgstimxblitter-so /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/libgstimxblitter.so \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/gstreamer-1.0/libgstimxeglvivsink.so gst-imx-plugin-eglvivsink /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/gstreamer-1.0/libgstimxeglvivsink.so \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/gstreamer-1.0/libgstimxipu.so gst-imx-plugin-ipu /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/gstreamer-1.0/libgstimxipu.so \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/gstreamer-1.0/libgstimxvpu.so gst-imx-plugin-vpu /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/gstreamer-1.0/libgstimxvpu.so \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/gstreamer-1.0/libgstimxv4l2videosrc.so gst-imx-plugin-v4l2videosrc /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/gstreamer-1.0/libgstimxv4l2videosrc.so \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/gstreamer-1.0/libgstimxaudio.so gst-imx-plugin-audio /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/gstreamer-1.0/libgstimxaudio.so \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/gstreamer-1.0/libgstimxpxp.so gst-imx-plugin-pxp /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/gstreamer-1.0/libgstimxpxp.so \
+		--slave /usr/lib/$DEB_HOST_MULTIARCH/gstreamer-1.0/libgstimxg2d.so gst-imx-plugin-g2d /usr/lib/$DEB_HOST_MULTIARCH/gstreamer1.0-imx-fb/gstreamer-1.0/libgstimxg2d.so
+fi
+
+#DEBHELPER#
+
+exit 0
