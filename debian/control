@@ -6,9 +6,9 @@ Build-Depends: debhelper (>= 9),
  libgstreamer1.0-dev (>= 1.2.0),
  libgstreamer-plugins-base1.0-dev (>= 1.2.0),
  libfslvpuwrap-dev (>= 1.0.45),
- gpu-viv-bin-fb-dev,
- gpu-viv-bin-wl-dev,
- gpu-viv-bin-x11-dev,
+ gpu-viv-bin-fb-dev | imx-gpu-viv-fb-dev,
+ gpu-viv-bin-wl-dev | imx-gpu-viv-wl-dev,
+ gpu-viv-bin-x11-dev | imx-gpu-viv-x11-dev,
  libx11-dev,
  kernel-cubox-i-dev,
  libfslcodec-dev,
@@ -20,7 +20,10 @@ Package: gstreamer1.0-imx-fb
 Section: libs
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-fb
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ gpu-viv-bin-fb | imx-gpu-viv-fb,
 Provides: gstreamer1.0-imx
 Breaks: gstreamer1.0-imx
 Replaces: gstreamer1.0-imx
@@ -31,7 +34,10 @@ Description: Todo
 #Section: libs
 #Architecture: any
 #Pre-Depends: ${misc:Pre-Depends}
-#Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-dfb
+#Depends:
+# ${shlibs:Depends},
+# ${misc:Depends},
+# gpu-viv-bin-dfb | imx-gpu-viv-dfb,
 #Provides: gstreamer1.0-imx
 #Breaks: gstreamer1.0-imx
 #Replaces: gstreamer1.0-imx
@@ -42,7 +48,10 @@ Package: gstreamer1.0-imx-wl
 Section: libs
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-wl
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ gpu-viv-bin-wl | imx-gpu-viv-wl,
 Provides: gstreamer1.0-imx
 Breaks: gstreamer1.0-imx
 Replaces: gstreamer1.0-imx
@@ -53,7 +62,10 @@ Package: gstreamer1.0-imx-x11
 Section: libs
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Depends: ${shlibs:Depends}, ${misc:Depends}, gpu-viv-bin-v4-x11
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ gpu-viv-bin-x11 | imx-gpu-viv-x11,
 Provides: gstreamer1.0-imx
 Breaks: gstreamer1.0-imx
 Replaces: gstreamer1.0-imx
