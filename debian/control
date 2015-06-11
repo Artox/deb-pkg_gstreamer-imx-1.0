@@ -6,45 +6,48 @@ Build-Depends: debhelper (>= 9),
  libgstreamer1.0-dev (>= 1.2.0),
  libgstreamer-plugins-base1.0-dev (>= 1.2.0),
  libfslvpuwrap-dev (>= 1.0.45),
- gpu-viv-bin-v4-x11-dev,
+ gpu-viv-bin-fb-dev,
+ gpu-viv-bin-dfb-dev,
+ gpu-viv-bin-wl-dev,
+ gpu-viv-bin-x11-dev,
  libx11-dev,
  kernel-cubox-i-dev,
  libfslcodec-dev
 Standards-Version: 3.9.6
 Section: libs
 
-#Package: gstreamer1.0-imx-fb
-#Section: libs
-#Architecture: any
-#Pre-Depends: ${misc:Pre-Depends}
-#Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-fb
-#Provides: gstreamer1.0-imx
-#Breaks: gstreamer1.0-imx
-#Replaces: gstreamer1.0-imx
-#Description: Todo
-# T. O. D. O.
+Package: gstreamer1.0-imx-fb
+Section: libs
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-fb
+Provides: gstreamer1.0-imx
+Breaks: gstreamer1.0-imx
+Replaces: gstreamer1.0-imx
+Description: Todo
+ T. O. D. O.
 
-#Package: gstreamer1.0-imx-dfb
-#Section: libs
-#Architecture: any
-#Pre-Depends: ${misc:Pre-Depends}
-#Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-dfb
-#Provides: gstreamer1.0-imx
-#Breaks: gstreamer1.0-imx
-#Replaces: gstreamer1.0-imx
-#Description: Todo
-# T. O. D. O.
+Package: gstreamer1.0-imx-dfb
+Section: libs
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-dfb
+Provides: gstreamer1.0-imx
+Breaks: gstreamer1.0-imx
+Replaces: gstreamer1.0-imx
+Description: Todo
+ T. O. D. O.
 
-#Package: gstreamer1.0-imx-wl
-#Section: libs
-#Architecture: any
-#Pre-Depends: ${misc:Pre-Depends}
-#Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-wl
-#Provides: gstreamer1.0-imx
-#Breaks: gstreamer1.0-imx
-#Replaces: gstreamer1.0-imx
-#Description: Todo
-# T. O. D. O.
+Package: gstreamer1.0-imx-wl
+Section: libs
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-wl
+Provides: gstreamer1.0-imx
+Breaks: gstreamer1.0-imx
+Replaces: gstreamer1.0-imx
+Description: Todo
+ T. O. D. O.
 
 Package: gstreamer1.0-imx-x11
 Section: libs

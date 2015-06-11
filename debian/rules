@@ -28,9 +28,9 @@ override_dh_auto_install:
 	./waf configure $(SARGS) --egl-platform=fb -o build-fb
 	./waf build -o build-fb
 	./waf install -o build-fb --destdir=$(DESTDIR)-fb
-#	./waf configure $(SARGS) --egl-platform=directfb -o build-dfb
-#	./waf build -o build-dfb
-#	./waf install -o build-dfb --destdir=$(DESTDIR)-dfb
+	./waf configure $(SARGS) --egl-platform=directfb -o build-dfb
+	./waf build -o build-dfb
+	./waf install -o build-dfb --destdir=$(DESTDIR)-dfb
 	./waf configure $(SARGS) --egl-platform=wayland -o build-wl
 	./waf build -o build-wl
 	./waf install -o build-wl --destdir=$(DESTDIR)-wl
