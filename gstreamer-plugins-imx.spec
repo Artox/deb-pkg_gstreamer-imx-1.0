@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 
 Name: gstreamer-plugins-imx
-Version: 0.10.2
+Version: 0.11.1
 Release: 1
 License: GPL-2.0
 Group: Productivity/Multimedia/Other
