@@ -20,7 +20,7 @@
 #include <gst/gst.h>
 #include <gst/video/video.h>
 
-#include "blitter_video_transform.h"
+#include "video_transform.h"
 #include "../common/phys_mem_meta.h"
 
 
@@ -35,16 +35,19 @@ enum
 };
 
 
+#define DEFAULT_INPUT_CROP TRUE
+
+
 G_DEFINE_ABSTRACT_TYPE(GstImxBlitterVideoTransform, gst_imx_blitter_video_transform, GST_TYPE_BASE_TRANSFORM)
 
 
 /* general element operations */
 static void gst_imx_blitter_video_transform_finalize(GObject *object);
+static void gst_imx_blitter_video_transform_set_property(GObject *object, guint prop_id, GValue const *value, GParamSpec *pspec);
+static void gst_imx_blitter_video_transform_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static GstStateChangeReturn gst_imx_blitter_video_transform_change_state(GstElement *element, GstStateChange transition);
 static gboolean gst_imx_blitter_video_transform_sink_event(GstBaseTransform *transform, GstEvent *event);
 static gboolean gst_imx_blitter_video_transform_src_event(GstBaseTransform *transform, GstEvent *event);
-static void gst_imx_blitter_video_transform_set_property(GObject *object, guint prop_id, GValue const *value, GParamSpec *pspec);
-static void gst_imx_blitter_video_transform_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 
 /* caps handling */
 static GstCaps* gst_imx_blitter_video_transform_transform_caps(GstBaseTransform *transform, GstPadDirection direction, GstCaps *caps, GstCaps *filter);
@@ -66,6 +69,9 @@ static gboolean gst_imx_blitter_video_transform_transform_size(GstBaseTransform 
 static gboolean gst_imx_blitter_video_transform_transform_meta(GstBaseTransform *trans, GstBuffer *inbuf, GstMeta *meta, GstBuffer *outbuf);
 static gboolean gst_imx_blitter_video_transform_get_unit_size(GstBaseTransform *transform, GstCaps *caps, gsize *size);
 static gboolean gst_imx_blitter_video_transform_copy_metadata(GstBaseTransform *trans, GstBuffer *input, GstBuffer *outbuf);
+
+/* misc */
+static gboolean gst_imx_blitter_video_transform_acquire_blitter(GstImxBlitterVideoTransform *blitter_video_transform);
 
 
 
@@ -106,19 +112,18 @@ void gst_imx_blitter_video_transform_class_init(GstImxBlitterVideoTransformClass
 
 	klass->start = NULL;
 	klass->stop = NULL;
-
 	klass->are_video_infos_equal = NULL;
-
 	klass->are_transforms_necessary = NULL;
+	klass->create_blitter = NULL;
 
 	g_object_class_install_property(
 		object_class,
 		PROP_INPUT_CROP,
 		g_param_spec_boolean(
-			"enable-crop",
-			"Enable input frame cropping",
+			"input-crop",
+			"Input crop",
 			"Whether or not to crop input frames based on their video crop metadata",
-			GST_IMX_BASE_BLITTER_CROP_DEFAULT,
+			DEFAULT_INPUT_CROP,
 			G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS
 		)
 	);
@@ -136,9 +141,10 @@ void gst_imx_blitter_video_transform_init(GstImxBlitterVideoTransform *blitter_v
 	gst_video_info_init(&(blitter_video_transform->input_video_info));
 	gst_video_info_init(&(blitter_video_transform->output_video_info));
 
-	blitter_video_transform->blitter = NULL;
+	blitter_video_transform->input_crop = DEFAULT_INPUT_CROP;
+	blitter_video_transform->last_frame_with_cropdata = FALSE;
 
-	blitter_video_transform->input_crop = GST_IMX_BASE_BLITTER_CROP_DEFAULT;
+	blitter_video_transform->blitter = NULL;
 
 	g_mutex_init(&(blitter_video_transform->mutex));
 
@@ -164,80 +170,6 @@ static void gst_imx_blitter_video_transform_finalize(GObject *object)
 }
 
 
-static GstStateChangeReturn gst_imx_blitter_video_transform_change_state(GstElement *element, GstStateChange transition)
-{
-	GstImxBlitterVideoTransform *blitter_video_transform = GST_IMX_BLITTER_VIDEO_TRANSFORM(element);
-	GstImxBlitterVideoTransformClass *klass = GST_IMX_BLITTER_VIDEO_TRANSFORM_CLASS(G_OBJECT_GET_CLASS(element));
-	GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
-
-	g_assert(blitter_video_transform != NULL);
-	g_assert(klass->start != NULL);
-
-	switch (transition)
-	{
-		case GST_STATE_CHANGE_NULL_TO_READY:
-		{
-			GST_IMX_BLITTER_VIDEO_TRANSFORM_LOCK(blitter_video_transform);
-
-			blitter_video_transform->initialized = TRUE;
-
-			if (!(klass->start(blitter_video_transform)))
-			{
-				GST_ERROR_OBJECT(blitter_video_transform, "start() failed");
-				blitter_video_transform->initialized = FALSE;
-				GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
-				return GST_STATE_CHANGE_FAILURE;
-			}
-
-			/* start() must call gst_imx_blitter_video_transform_set_blitter(),
-			 * otherwise the video transform element cannot function properly */
-			g_assert(blitter_video_transform->blitter != NULL);
-
-			gst_imx_base_blitter_enable_crop(blitter_video_transform->blitter, blitter_video_transform->input_crop);
-
-			GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
-
-			break;
-		}
-
-		default:
-			break;
-	}
-
-	ret = GST_ELEMENT_CLASS(gst_imx_blitter_video_transform_parent_class)->change_state(element, transition);
-	if (ret == GST_STATE_CHANGE_FAILURE)
-		return ret;
-
-	switch (transition)
-	{
-		case GST_STATE_CHANGE_READY_TO_NULL:
-		{
-			GST_IMX_BLITTER_VIDEO_TRANSFORM_LOCK(blitter_video_transform);
-
-			blitter_video_transform->initialized = FALSE;
-
-			if ((klass->stop != NULL) && !(klass->stop(blitter_video_transform)))
-				GST_ERROR_OBJECT(blitter_video_transform, "stop() failed");
-
-			GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
-
-			if (blitter_video_transform->blitter != NULL)
-			{
-				gst_object_unref(GST_OBJECT(blitter_video_transform->blitter));
-				blitter_video_transform->blitter = NULL;
-			}
-
-			break;
-		}
-
-		default:
-			break;
-	}
-
-	return ret;
-}
-
-
 static void gst_imx_blitter_video_transform_set_property(GObject *object, guint prop_id, GValue const *value, GParamSpec *pspec)
 {
 	GstImxBlitterVideoTransform *blitter_video_transform = GST_IMX_BLITTER_VIDEO_TRANSFORM(object);
@@ -245,12 +177,12 @@ static void gst_imx_blitter_video_transform_set_property(GObject *object, guint 
 	switch (prop_id)
 	{
 		case PROP_INPUT_CROP:
+		{
 			GST_IMX_BLITTER_VIDEO_TRANSFORM_LOCK(blitter_video_transform);
 			blitter_video_transform->input_crop = g_value_get_boolean(value);
-			if (blitter_video_transform->blitter != NULL)
-				gst_imx_base_blitter_enable_crop(blitter_video_transform->blitter, blitter_video_transform->input_crop);
 			GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
 			break;
+		}
 
 		default:
 			G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -278,6 +210,88 @@ static void gst_imx_blitter_video_transform_get_property(GObject *object, guint 
 }
 
 
+static GstStateChangeReturn gst_imx_blitter_video_transform_change_state(GstElement *element, GstStateChange transition)
+{
+	GstImxBlitterVideoTransform *blitter_video_transform = GST_IMX_BLITTER_VIDEO_TRANSFORM(element);
+	GstImxBlitterVideoTransformClass *klass = GST_IMX_BLITTER_VIDEO_TRANSFORM_CLASS(G_OBJECT_GET_CLASS(element));
+	GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
+
+	g_assert(blitter_video_transform != NULL);
+
+	switch (transition)
+	{
+		case GST_STATE_CHANGE_NULL_TO_READY:
+		{
+			GST_IMX_BLITTER_VIDEO_TRANSFORM_LOCK(blitter_video_transform);
+
+			blitter_video_transform->initialized = TRUE;
+
+			if ((klass->start != NULL) && !(klass->start(blitter_video_transform)))
+			{
+				GST_ERROR_OBJECT(blitter_video_transform, "start() failed");
+				blitter_video_transform->initialized = FALSE;
+				GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
+				return GST_STATE_CHANGE_FAILURE;
+			}
+
+			if (!gst_imx_blitter_video_transform_acquire_blitter(blitter_video_transform))
+			{
+				GST_ERROR_OBJECT(blitter_video_transform, "acquiring blitter failed");
+				GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
+				return GST_STATE_CHANGE_FAILURE;
+			}
+
+			GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
+
+			break;
+		}
+
+		default:
+			break;
+	}
+
+	ret = GST_ELEMENT_CLASS(gst_imx_blitter_video_transform_parent_class)->change_state(element, transition);
+	if (ret == GST_STATE_CHANGE_FAILURE)
+		return ret;
+
+	switch (transition)
+	{
+		case GST_STATE_CHANGE_PAUSED_TO_READY:
+		{
+			GST_IMX_BLITTER_VIDEO_TRANSFORM_LOCK(blitter_video_transform);
+			blitter_video_transform->last_frame_with_cropdata = FALSE;
+			GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
+			break;
+		}
+
+		case GST_STATE_CHANGE_READY_TO_NULL:
+		{
+			GST_IMX_BLITTER_VIDEO_TRANSFORM_LOCK(blitter_video_transform);
+
+			blitter_video_transform->initialized = FALSE;
+
+			if ((klass->stop != NULL) && !(klass->stop(blitter_video_transform)))
+				GST_ERROR_OBJECT(blitter_video_transform, "stop() failed");
+
+			if (blitter_video_transform->blitter != NULL)
+			{
+				gst_object_unref(GST_OBJECT(blitter_video_transform->blitter));
+				blitter_video_transform->blitter = NULL;
+			}
+
+			GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
+
+			break;
+		}
+
+		default:
+			break;
+	}
+
+	return ret;
+}
+
+
 static gboolean gst_imx_blitter_video_transform_sink_event(GstBaseTransform *transform, GstEvent *event)
 {
 	GstImxBlitterVideoTransform *blitter_video_transform = GST_IMX_BLITTER_VIDEO_TRANSFORM(transform);
@@ -288,10 +302,7 @@ static gboolean gst_imx_blitter_video_transform_sink_event(GstBaseTransform *tra
 		{
 			GST_IMX_BLITTER_VIDEO_TRANSFORM_LOCK(blitter_video_transform);
 			if (blitter_video_transform->blitter != NULL)
-			{
-				if (!gst_imx_base_blitter_flush(blitter_video_transform->blitter))
-					GST_WARNING_OBJECT(transform, "could not flush blitter");
-			}
+				gst_imx_blitter_flush(blitter_video_transform->blitter);
 			GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
 
 			break;
@@ -317,6 +328,8 @@ static gboolean gst_imx_blitter_video_transform_src_event(GstBaseTransform *tran
 	{
 		case GST_EVENT_NAVIGATION:
 		{
+			/* scale pointer_x/y values in the event if in- and output have different width/height */
+
 			gint in_w = GST_VIDEO_INFO_WIDTH(&(blitter_video_transform->input_video_info));
 			gint in_h = GST_VIDEO_INFO_HEIGHT(&(blitter_video_transform->input_video_info));
 			gint out_w = GST_VIDEO_INFO_WIDTH(&(blitter_video_transform->output_video_info));
@@ -388,6 +401,7 @@ static GstCaps* gst_imx_blitter_video_transform_transform_caps(GstBaseTransform 
 			NULL
 		);
 
+		/* colorimetry is not supported by the videotransform element */
 		gst_structure_remove_fields(structure, "format", "colorimetry", "chroma-site", NULL);
 
 		/* if pixel aspect ratio, make a range of it */
@@ -402,6 +416,7 @@ static GstCaps* gst_imx_blitter_video_transform_transform_caps(GstBaseTransform 
 		gst_caps_append_structure(tmpcaps1, structure);
 	}
 
+	/* filter the resulting caps if necessary */
 	if (filter != NULL)
 	{
 		tmpcaps2 = gst_caps_intersect_full(filter, tmpcaps1, GST_CAPS_INTERSECT_FIRST);
@@ -415,6 +430,14 @@ static GstCaps* gst_imx_blitter_video_transform_transform_caps(GstBaseTransform 
 
 	return result;
 }
+
+
+/* NOTE: these following functions are taken almost 1:1 from the upstream videoconvert element:
+ * gst_imx_blitter_video_transform_fixate_caps
+ * gst_imx_blitter_video_transform_fixate_size_caps
+ * score_value
+ * gst_imx_blitter_video_transform_fixate_format_caps
+ * */
 
 
 static GstCaps* gst_imx_blitter_video_transform_fixate_caps(GstBaseTransform *transform, GstPadDirection direction, GstCaps *caps, GstCaps *othercaps)
@@ -985,6 +1008,8 @@ static gboolean gst_imx_blitter_video_transform_set_caps(GstBaseTransform *trans
 	GstVideoInfo in_info, out_info;
 	GstImxBlitterVideoTransform *blitter_video_transform = GST_IMX_BLITTER_VIDEO_TRANSFORM(transform);
 	GstImxBlitterVideoTransformClass *klass = GST_IMX_BLITTER_VIDEO_TRANSFORM_CLASS(G_OBJECT_GET_CLASS(transform));
+	GstImxCanvas *canvas = &(blitter_video_transform->canvas);
+	GstImxRegion source_subset;
 
 	g_assert(klass->are_video_infos_equal != NULL);
 	g_assert(blitter_video_transform->blitter != NULL);
@@ -1003,12 +1028,27 @@ static gboolean gst_imx_blitter_video_transform_set_caps(GstBaseTransform *trans
 	else
 		GST_DEBUG_OBJECT(transform, "input and output caps are not equal:  input: %" GST_PTR_FORMAT "  output: %" GST_PTR_FORMAT, (gpointer)in, (gpointer)out);
 
-	if (!gst_imx_base_blitter_set_input_video_info(blitter_video_transform->blitter, &in_info))
-	{
-		GST_ERROR_OBJECT(transform, "could not use input caps: %" GST_PTR_FORMAT, (gpointer)in);
-		blitter_video_transform->inout_info_set = FALSE;
-		return FALSE;
-	}
+	gst_imx_blitter_set_input_video_info(blitter_video_transform->blitter, &in_info);
+	gst_imx_blitter_set_output_video_info(blitter_video_transform->blitter, &out_info);
+
+	/* setting new caps changes the canvas, so recalculate it
+	 * the recalculation here is done without any input cropping, so set
+	 * last_frame_with_cropdata to FALSE, in case subsequent frames do
+	 * contain crop metadata */
+
+	blitter_video_transform->last_frame_with_cropdata = FALSE;
+
+	/* the canvas always encompasses the entire output frame */
+	canvas->outer_region.x1 = 0;
+	canvas->outer_region.y1 = 0;
+	canvas->outer_region.x2 = GST_VIDEO_INFO_WIDTH(&out_info);
+	canvas->outer_region.y2 = GST_VIDEO_INFO_HEIGHT(&out_info);
+
+	gst_imx_canvas_calculate_inner_region(canvas, &in_info);
+	gst_imx_canvas_clip(canvas, &(canvas->outer_region), &in_info, NULL, &source_subset);
+
+	gst_imx_blitter_set_input_region(blitter_video_transform->blitter, &source_subset);
+	gst_imx_blitter_set_output_canvas(blitter_video_transform->blitter, canvas);
 
 	blitter_video_transform->input_video_info = in_info;
 	blitter_video_transform->output_video_info = out_info;
@@ -1076,7 +1116,7 @@ static gboolean gst_imx_blitter_video_transform_decide_allocation(GstBaseTransfo
 			GST_DEBUG_OBJECT(blitter_video_transform, "no pool present; creating new pool");
 		else
 			GST_DEBUG_OBJECT(blitter_video_transform, "no pool supports physical memory buffers; creating new pool");
-		pool = gst_imx_base_blitter_create_bufferpool(blitter_video_transform->blitter, outcaps, size, min, max, NULL, NULL);
+		pool = gst_imx_blitter_create_bufferpool(blitter_video_transform->blitter, outcaps, size, min, max, NULL, NULL);
 	}
 	else
 	{
@@ -1114,26 +1154,94 @@ static gboolean gst_imx_blitter_video_transform_decide_allocation(GstBaseTransfo
 
 static GstFlowReturn gst_imx_blitter_video_transform_prepare_output_buffer(GstBaseTransform *transform, GstBuffer *input, GstBuffer **outbuf)
 {
-	gboolean passthrough = FALSE;
+	gboolean passthrough;
 	GstImxBlitterVideoTransform *blitter_video_transform = GST_IMX_BLITTER_VIDEO_TRANSFORM(transform);
 	GstImxBlitterVideoTransformClass *klass = GST_IMX_BLITTER_VIDEO_TRANSFORM_CLASS(G_OBJECT_GET_CLASS(transform));
+	GstVideoCropMeta *video_crop_meta;
+	gboolean update_canvas = FALSE;
 
-	g_assert(klass->are_transforms_necessary != NULL);
+	/* If either there is no input buffer or in- and output info are not equal,
+	 * it is clear there can be no passthrough mode */
+	passthrough = (input != NULL) && blitter_video_transform->inout_info_equal;
 
 	GST_IMX_BLITTER_VIDEO_TRANSFORM_LOCK(blitter_video_transform);
 
-	/* Test if passthrough should be enabled */
-	if ((input != NULL) && blitter_video_transform->inout_info_equal)
+	/* Check if cropping needs to be done */
+	if ((input != NULL) && blitter_video_transform->input_crop && ((video_crop_meta = gst_buffer_get_video_crop_meta(input)) != NULL))
 	{
-		/* if there is an input buffer and the input/output caps are equal,
-		 * assume passthrough should be used, and test for exceptions where
-		 * passthrough must not be enabled; such exceptions are transforms
-		 * like rotation, deinterlacing ... these are defined by the
-		 * derived video transform class */
-		passthrough = !(klass->are_transforms_necessary(blitter_video_transform, input));
+		GstImxRegion source_region;
+		gint in_width, in_height;
+
+		source_region.x1 = video_crop_meta->x;
+		source_region.y1 = video_crop_meta->y;
+		source_region.x2 = video_crop_meta->x + video_crop_meta->width;
+		source_region.y2 = video_crop_meta->y + video_crop_meta->height;
+
+		in_width = GST_VIDEO_INFO_WIDTH(&(blitter_video_transform->input_video_info));
+		in_height = GST_VIDEO_INFO_HEIGHT(&(blitter_video_transform->input_video_info));
+
+		/* Make sure the source region does not exceed valid bounds */
+		source_region.x1 = MAX(0, source_region.x1);
+		source_region.y1 = MAX(0, source_region.y1);
+		source_region.x2 = MIN(in_width, source_region.x2);
+		source_region.y2 = MIN(in_height, source_region.y2);
+
+		/* If the crop rectangle encompasses the entire frame, cropping is
+		 * effectively a no-op, so make it passthrough in that case,
+		 * unless passthrough is already FALSE */
+		passthrough = passthrough && (source_region.x1 == 0) && (source_region.y1 == 0) && (source_region.x2 == in_width) && (source_region.y2 == in_height);
+
+		GST_LOG_OBJECT(blitter_video_transform, "retrieved crop rectangle %" GST_IMX_REGION_FORMAT, GST_IMX_REGION_ARGS(&source_region));
+
+		/* Canvas needs to be updated if either one of these applies:
+		 * - the current frame has crop metadata, the last one didn't
+		 * - the new crop rectangle and the last are different */
+		if (!(blitter_video_transform->last_frame_with_cropdata) || !gst_imx_region_equal(&source_region, &(blitter_video_transform->last_source_region)))
+		{
+			GST_LOG_OBJECT(blitter_video_transform, "using new crop rectangle %" GST_IMX_REGION_FORMAT, GST_IMX_REGION_ARGS(&source_region));
+			blitter_video_transform->last_source_region = source_region;
+			update_canvas = TRUE;
+		}
+
+		blitter_video_transform->last_frame_with_cropdata = TRUE;
+	}
+	else
+	{
+		/* Force a canvas update if this frame has no crop metadata but the last one did */
+		if (blitter_video_transform->last_frame_with_cropdata)
+			update_canvas = TRUE;
+		blitter_video_transform->last_frame_with_cropdata = FALSE;
+	}
+
+	if (update_canvas)
+	{
+		GstImxRegion source_subset;
+		GstImxCanvas *canvas = &(blitter_video_transform->canvas);
+
+		gst_imx_canvas_clip(
+			canvas,
+			&(canvas->outer_region),
+			&(blitter_video_transform->input_video_info),
+			blitter_video_transform->last_frame_with_cropdata ? &(blitter_video_transform->last_source_region) : NULL,
+			&source_subset
+		);
+
+		gst_imx_blitter_set_input_region(blitter_video_transform->blitter, &source_subset);
+		gst_imx_blitter_set_output_canvas(blitter_video_transform->blitter, canvas);
+	}
+
+	if ((input != NULL) && passthrough)
+	{
+		/* test for additional special cases for passthrough must not be enabled
+		 * such case are transforms like rotation, deinterlacing ... */
+		passthrough = passthrough && (blitter_video_transform->canvas.inner_rotation == GST_IMX_CANVAS_INNER_ROTATION_NONE) &&
+		              (klass->are_transforms_necessary != NULL) &&
+		              !(klass->are_transforms_necessary(blitter_video_transform, input));
 	}
 	else if (!blitter_video_transform->inout_info_equal)
 		GST_LOG_OBJECT(transform, "input and output caps are not equal");
+	else if (blitter_video_transform->last_frame_with_cropdata && !passthrough)
+		GST_LOG_OBJECT(transform, "cropping is performed");
 	else if (input == NULL)
 		GST_LOG_OBJECT(transform, "input buffer is NULL");
 
@@ -1143,6 +1251,9 @@ static GstFlowReturn gst_imx_blitter_video_transform_prepare_output_buffer(GstBa
 
 	if (passthrough)
 	{
+		/* This instructs the base class to not allocate a new buffer for
+		 * the output, and instead pass the input buffer as the output
+		 * (this is used in the fransform_frame function below) */
 		*outbuf = input;
 		return GST_FLOW_OK;
 	}
@@ -1153,7 +1264,6 @@ static GstFlowReturn gst_imx_blitter_video_transform_prepare_output_buffer(GstBa
 
 static GstFlowReturn gst_imx_blitter_video_transform_transform_frame(GstBaseTransform *transform, GstBuffer *in, GstBuffer *out)
 {
-	gboolean ret;
 	GstImxBlitterVideoTransform *blitter_video_transform = GST_IMX_BLITTER_VIDEO_TRANSFORM(transform);
 
 	g_assert(blitter_video_transform->blitter != NULL);
@@ -1172,14 +1282,14 @@ static GstFlowReturn gst_imx_blitter_video_transform_transform_frame(GstBaseTran
 
 	GST_IMX_BLITTER_VIDEO_TRANSFORM_LOCK(blitter_video_transform);
 
-	ret = TRUE;
-	ret = ret && gst_imx_base_blitter_set_input_buffer(blitter_video_transform->blitter, in);
-	ret = ret && gst_imx_base_blitter_set_output_buffer(blitter_video_transform->blitter, out);
-	ret = ret && gst_imx_base_blitter_blit(blitter_video_transform->blitter);
+	gst_imx_blitter_set_input_frame(blitter_video_transform->blitter, in);
+	gst_imx_blitter_set_output_frame(blitter_video_transform->blitter, out);
+	gst_imx_blitter_blit(blitter_video_transform->blitter, 255);
+	gst_imx_blitter_set_output_frame(blitter_video_transform->blitter, NULL);
 
 	GST_IMX_BLITTER_VIDEO_TRANSFORM_UNLOCK(blitter_video_transform);
 
-	return ret ? GST_FLOW_OK : GST_FLOW_ERROR;
+	return GST_FLOW_OK;
 }
 
 
@@ -1240,9 +1350,13 @@ static gboolean gst_imx_blitter_video_transform_get_unit_size(GstBaseTransform *
 
 static gboolean gst_imx_blitter_video_transform_copy_metadata(G_GNUC_UNUSED GstBaseTransform *trans, GstBuffer *input, GstBuffer *outbuf)
 {
-	/* Only copy timestamps; the rest of the metadata must not be copied */
+	/* Copy PTS, DTS, duration, offset, offset-end
+	 * These do not change in the videotransform operation */
 	GST_BUFFER_DTS(outbuf) = GST_BUFFER_DTS(input);
 	GST_BUFFER_PTS(outbuf) = GST_BUFFER_PTS(input);
+	GST_BUFFER_DURATION(outbuf) = GST_BUFFER_DURATION(input);
+	GST_BUFFER_OFFSET(outbuf) = GST_BUFFER_OFFSET(input);
+	GST_BUFFER_OFFSET_END(outbuf) = GST_BUFFER_OFFSET_END(input);
 
 	/* For GStreamer 1.3.1 and newer, make sure the GST_BUFFER_FLAG_TAG_MEMORY flag
 	 * isn't copied, otherwise the output buffer will be reallocated all the time */
@@ -1257,20 +1371,24 @@ static gboolean gst_imx_blitter_video_transform_copy_metadata(G_GNUC_UNUSED GstB
 
 
 
-gboolean gst_imx_blitter_video_transform_set_blitter(GstImxBlitterVideoTransform *blitter_video_transform, GstImxBaseBlitter *blitter)
+static gboolean gst_imx_blitter_video_transform_acquire_blitter(GstImxBlitterVideoTransform *blitter_video_transform)
 {
-	g_assert(blitter_video_transform != NULL);
-	g_assert(blitter != NULL);
+	/* must be called with lock held */
 
-	if (blitter == blitter_video_transform->blitter)
+	GstImxBlitterVideoTransformClass *klass = GST_IMX_BLITTER_VIDEO_TRANSFORM_CLASS(G_OBJECT_GET_CLASS(blitter_video_transform));
+
+	g_assert(blitter_video_transform != NULL);
+	g_assert(klass->create_blitter != NULL);
+
+	/* Do nothing if the blitter is already acquired */
+	if (blitter_video_transform->blitter != NULL)
 		return TRUE;
 
-	if (blitter_video_transform->blitter != NULL)
-		gst_object_unref(GST_OBJECT(blitter_video_transform->blitter));
-
-	blitter_video_transform->blitter = blitter;
-
-	gst_object_ref(GST_OBJECT(blitter_video_transform->blitter));
+	if ((blitter_video_transform->blitter = klass->create_blitter(blitter_video_transform)) == NULL)
+	{
+		GST_ERROR_OBJECT(blitter_video_transform, "could not acquire blitter");
+		return FALSE;
+	}
 
 	return TRUE;
 }

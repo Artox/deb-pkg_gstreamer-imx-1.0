@@ -65,20 +65,17 @@ GST_DEBUG_CATEGORY_STATIC(gst_imx_v4l2src_debug_category);
 	GST_DEBUG_CATEGORY_INIT(gst_imx_v4l2src_debug_category, \
 			"imxv4l2videosrc", 0, "V4L2 CSI video source");
 
-G_DEFINE_TYPE_WITH_CODE(GstImxV4l2VideoSrc, gst_imx_v4l2src,
-	GST_TYPE_PUSH_SRC, DEBUG_INIT)
+static void gst_imx_v4l2src_uri_handler_init(gpointer g_iface,
+	gpointer iface_data);
 
-/* TODO: This part is nonessential, and causes compilation errors with certain 3.10 kernels,
- * since VIDIOC_DBG_G_CHIP_IDENT is an experimental interface. Disabled for now. */
-/*#define WITH_CHIP_IDENTIFICATION*/
+G_DEFINE_TYPE_WITH_CODE(GstImxV4l2VideoSrc, gst_imx_v4l2src, GST_TYPE_PUSH_SRC,
+	G_IMPLEMENT_INTERFACE(GST_TYPE_URI_HANDLER, gst_imx_v4l2src_uri_handler_init);
+	DEBUG_INIT)
 
 static gint gst_imx_v4l2src_capture_setup(GstImxV4l2VideoSrc *v4l2src)
 {
 	struct v4l2_format fmt = {0};
 	struct v4l2_streamparm parm = {0};
-#ifdef WITH_CHIP_IDENTIFICATION
-	struct v4l2_dbg_chip_ident chip;
-#endif
 	struct v4l2_frmsizeenum fszenum = {0};
 	v4l2_std_id id;
 	gint input;
@@ -91,14 +88,6 @@ static gint gst_imx_v4l2src_capture_setup(GstImxV4l2VideoSrc *v4l2src)
 		return -1;
 	}
 
-#ifdef WITH_CHIP_IDENTIFICATION
-	memset(&chip, 0, sizeof(chip));
-	if (ioctl(fd_v4l, VIDIOC_DBG_G_CHIP_IDENT, &chip))
-		GST_ERROR_OBJECT(v4l2src, "VIDIOC_DBG_G_CHIP_IDENT failed");
-	else
-		GST_INFO_OBJECT(v4l2src, "sensor chip is %s", chip.match.name);
-#endif
-
 	if (ioctl (fd_v4l, VIDIOC_G_STD, &id) < 0) {
 		GST_WARNING_OBJECT(v4l2src, "VIDIOC_G_STD failed: %s", strerror(errno));
 	} else {
@@ -109,8 +98,17 @@ static gint gst_imx_v4l2src_capture_setup(GstImxV4l2VideoSrc *v4l2src)
 		}
 	}
 
+	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	if (ioctl(fd_v4l, VIDIOC_G_FMT, &fmt) < 0) {
+		GST_ERROR_OBJECT(v4l2src, "VIDIOC_G_FMT failed");
+		close(fd_v4l);
+		return -1;
+	}
+
+	GST_DEBUG_OBJECT(v4l2src, "pixelformat = %d  field = %d", fmt.fmt.pix.pixelformat, fmt.fmt.pix.field);
+
 	fszenum.index = v4l2src->capture_mode;
-	fszenum.pixel_format = V4L2_PIX_FMT_YUV420;
+	fszenum.pixel_format = fmt.fmt.pix.pixelformat;
 	if (ioctl(fd_v4l, VIDIOC_ENUM_FRAMESIZES, &fszenum) < 0) {
 		GST_ERROR_OBJECT(v4l2src, "VIDIOC_ENUM_FRAMESIZES failed: %s", strerror(errno));
 		close(fd_v4l);
@@ -138,9 +136,13 @@ static gint gst_imx_v4l2src_capture_setup(GstImxV4l2VideoSrc *v4l2src)
 		close(fd_v4l);
 		return -1;
 	}
+	/* Get the actual frame period if possible */
+	if (parm.parm.capture.capability & V4L2_CAP_TIMEPERFRAME) {
+		v4l2src->fps_n = parm.parm.capture.timeperframe.denominator;
+		v4l2src->fps_d = parm.parm.capture.timeperframe.numerator;
+	}
 
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
 	fmt.fmt.pix.bytesperline = 0;
 	fmt.fmt.pix.priv = 0;
 	fmt.fmt.pix.sizeimage = 0;
@@ -282,14 +284,39 @@ static gboolean gst_imx_v4l2src_negotiate(GstBaseSrc *src)
 {
 	GstImxV4l2VideoSrc *v4l2src = GST_IMX_V4L2SRC(src);
 	GstCaps *caps;
+	GstVideoFormat gst_fmt;
+	const gchar *pixel_format = NULL;
+	const gchar *interlace_mode = "progressive";
+	struct v4l2_format fmt;
+
+	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	if (ioctl(GST_IMX_FD_OBJECT_GET_FD(v4l2src->fd_obj_v4l), VIDIOC_G_FMT, &fmt) < 0) {
+		GST_ERROR_OBJECT(v4l2src, "VIDIOC_G_FMT failed");
+		return FALSE;
+	}
+
+	switch (fmt.fmt.pix.pixelformat) {
+	case V4L2_PIX_FMT_YUV420: /* Special Case for handling YU12 */
+		pixel_format = "I420";
+		break;
+	case V4L2_PIX_FMT_YUYV: /* Special Case for handling YUYV */
+		pixel_format = "YUY2";
+		break;
+	default:
+		gst_fmt = gst_video_format_from_fourcc(fmt.fmt.pix.pixelformat);
+		pixel_format = gst_video_format_to_string(gst_fmt);
+	}
+
+	if (fmt.fmt.pix.field == V4L2_FIELD_INTERLACED)
+		interlace_mode = "interleaved";
 
 	/* not much to negotiate;
 	 * we already performed setup, so that is what will be streamed */
-
 	caps = gst_caps_new_simple("video/x-raw",
-			"format", G_TYPE_STRING, "I420",
+			"format", G_TYPE_STRING, pixel_format,
 			"width", G_TYPE_INT, v4l2src->capture_width,
 			"height", G_TYPE_INT, v4l2src->capture_height,
+			"interlace-mode", G_TYPE_STRING, interlace_mode,
 			"framerate", GST_TYPE_FRACTION, v4l2src->fps_n, v4l2src->fps_d,
 			"pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
 			NULL);
@@ -303,13 +330,16 @@ static GstCaps *gst_imx_v4l2src_get_caps(GstBaseSrc *src, GstCaps *filter)
 {
 	GstImxV4l2VideoSrc *v4l2src = GST_IMX_V4L2SRC(src);
 	GstCaps *caps;
+	const gchar *pixel_format = "I420";
+	const gchar *interlace_mode = "progressive";
 
 	GST_INFO_OBJECT(v4l2src, "get caps filter %" GST_PTR_FORMAT, (gpointer)filter);
 
 	caps = gst_caps_new_simple("video/x-raw",
-			"format", G_TYPE_STRING, "I420",
+			"format", G_TYPE_STRING, pixel_format,
 			"width", GST_TYPE_INT_RANGE, 16, G_MAXINT,
 			"height", GST_TYPE_INT_RANGE, 16, G_MAXINT,
+			"interlace-mode", G_TYPE_STRING, interlace_mode,
 			"framerate", GST_TYPE_FRACTION_RANGE, 0, 1, 100, 1,
 			"pixel-aspect-ratio", GST_TYPE_FRACTION_RANGE, 0, 1, 100, 1,
 			NULL);
@@ -404,6 +434,7 @@ static void gst_imx_v4l2src_init(GstImxV4l2VideoSrc *v4l2src)
 	v4l2src->input = DEFAULT_INPUT;
 	v4l2src->devicename = g_strdup(DEFAULT_DEVICE);
 	v4l2src->queue_size = DEFAULT_QUEUE_SIZE;
+	v4l2src->fd_obj_v4l = NULL;
 
 	gst_base_src_set_format(GST_BASE_SRC(v4l2src), GST_FORMAT_TIME);
 	gst_base_src_set_live(GST_BASE_SRC(v4l2src), TRUE);
@@ -478,6 +509,54 @@ static void gst_imx_v4l2src_class_init(GstImxV4l2VideoSrcClass *klass)
 			gst_static_pad_template_get(&src_template));
 
 	return;
+}
+
+/* GstURIHandler interface */
+static GstURIType gst_imx_v4l2src_uri_get_type(GType type)
+{
+	return GST_URI_SRC;
+}
+
+static const gchar *const * gst_imx_v4l2src_uri_get_protocols(GType type)
+{
+	static const gchar *protocols[] = { "imxv4l2", NULL };
+
+	return protocols;
+}
+
+static gchar * gst_imx_v4l2src_uri_get_uri(GstURIHandler * handler)
+{
+	GstImxV4l2VideoSrc *v4l2src = GST_IMX_V4L2SRC(handler);
+
+	if (v4l2src->devicename != NULL) {
+		return g_strdup_printf("imxv4l2://%s", v4l2src->devicename);
+	}
+
+	return g_strdup ("imxv4l2://");
+}
+
+static gboolean gst_imx_v4l2src_uri_set_uri(GstURIHandler * handler,
+		const gchar * uri, GError ** error)
+{
+	GstImxV4l2VideoSrc *v4l2src = GST_IMX_V4L2SRC(handler);
+	const gchar *device = "/dev/video0";
+
+	if (strcmp (uri, "imxv4l2://") != 0) {
+		device = uri + 10;
+	}
+	g_object_set(v4l2src, "device", device, NULL);
+
+	return TRUE;
+}
+
+static void gst_imx_v4l2src_uri_handler_init(gpointer g_iface, gpointer iface_data)
+{
+	GstURIHandlerInterface *iface = (GstURIHandlerInterface *) g_iface;
+
+	iface->get_type = gst_imx_v4l2src_uri_get_type;
+	iface->get_protocols = gst_imx_v4l2src_uri_get_protocols;
+	iface->get_uri = gst_imx_v4l2src_uri_get_uri;
+	iface->set_uri = gst_imx_v4l2src_uri_set_uri;
 }
 
 static gboolean plugin_init(GstPlugin *plugin)
