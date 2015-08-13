@@ -11,7 +11,7 @@ Build-Depends: debhelper (>= 9),
  imx-gpu-viv-wl-dev,
  imx-gpu-viv-x11-dev,
  libx11-dev,
- kernel-cubox-i-dev,
+ imx-kernel-api,
  libfslcodec-dev
 Standards-Version: 3.9.6
 Section: libs
