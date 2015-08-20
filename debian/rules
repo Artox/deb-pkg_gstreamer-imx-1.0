@@ -25,15 +25,19 @@ override_dh_auto_clean:
 	rm -rf .lock*
 
 override_dh_auto_install:
+	sudo update-alternatives --set vivante-gal /usr/lib/galcore/libGAL-fb.so
 	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=fb -o build-fb
 	./waf build -o build-fb
 	./waf install -o build-fb --destdir=$(DESTDIR)-fb
+#	sudo update-alternatives --set vivante-gal /usr/lib/galcore/libGAL-dfb.so
 #	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=directfb -o build-dfb
 #	./waf build -o build-dfb
 #	./waf install -o build-dfb --destdir=$(DESTDIR)-dfb
+	sudo update-alternatives --set vivante-gal /usr/lib/galcore/libGAL-wl.so
 	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=wayland -o build-wl
 	./waf build -o build-wl
 	./waf install -o build-wl --destdir=$(DESTDIR)-wl
+	sudo update-alternatives --set vivante-gal /usr/lib/galcore/libGAL-x11.so
 	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=x11 -o build-x11
 	./waf build -o build-x11
 	./waf install -o build-x11 --destdir=$(DESTDIR)-x11
