@@ -14,7 +14,7 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 DESTDIR=$(CURDIR)/debian/gstreamer1.0-imx
 KHDRDIR=/usr/include/imx-kernel-api
-SARGS=--prefix=/usr --libdir=/usr/lib/$(DEB_HOST_MULTIARCH) --kernel-headers=$(KHDRDIR)
+SARGS=--prefix=/usr --libdir=/usr/lib/$(DEB_HOST_MULTIARCH) --plugin-install-path=/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer-1.0 --kernel-headers=$(KHDRDIR)
 
 %:
 	dh $@
