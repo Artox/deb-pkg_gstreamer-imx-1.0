@@ -13,7 +13,6 @@ def build(bld):
 		uselib = bld.env['COMMON_USELIB'],
 		target = 'gstimxcommon',
 		vnum = bld.env['GSTIMX_VERSION'],
-		source = bld.path.ant_glob('*.c'),
-		install_path = os.path.join(bld.env['PREFIX'], 'lib')
+		source = bld.path.ant_glob('*.c')
 	)
 
