@@ -25,43 +25,28 @@ override_dh_auto_clean:
 	rm -rf .lock*
 
 override_dh_auto_install:
-	# create standard -devel links for custom alternatives
-	ln -sv libGLESv2.so.2 libGLESv2.so
-	ln -sv /libEGL.so.1.0 libEGL.so
 
-	# select vivante-gal = FB as local alternative
-	ln -sfv /usr/lib/galcore/libGAL-fb.so ./libGAL.so
-	ln -sfv /usr/lib/galcore/libGAL_egl.fb.so ./libGAL_egl.so
-	ln -sfv /usr/lib/galcore/libEGL-fb.so ./libEGL.so.1.0
-	ln -sfv /usr/lib/galcore/libGLESv2-fb.so ./libGLESv2.so.2
-	LDFLAGS="-L$(CURDIR) -L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=fb -o build-fb
+	# select Vivante FB
+	uauhelper --set vivante-gal /usr/lib/galcore/libGAL-fb.so
+	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=fb -o build-fb
 	./waf build -o build-fb
 	./waf install -o build-fb --destdir=$(DESTDIR)-fb
 
-#	# select vivante-gal = DFB as local alternative
-#	ln -sfv /usr/lib/galcore/libGAL-dfb.so ./libGAL.so
-#	ln -sfv /usr/lib/galcore/libGAL_egl.dfb.so ./libGAL_egl.so
-#	ln -sfv /usr/lib/galcore/libEGL-dfb.so ./libEGL.so.1.0
-#	ln -sfv /usr/lib/galcore/libGLESv2-dfb.so ./libGLESv2.so.2
-#	LDFLAGS="-L$(CURDIR) -L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=directfb -o build-dfb
+#	# select Vivante DFB
+#	uauhelper --set vivante-gal /usr/lib/galcore/libGAL-dfb.so
+#	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=directfb -o build-dfb
 #	./waf build -o build-dfb
 #	./waf install -o build-dfb --destdir=$(DESTDIR)-dfb
 
-	# select vivante-gal = WL as local alternative
-	ln -sfv /usr/lib/galcore/libGAL-wl.so ./libGAL.so
-	ln -sfv /usr/lib/galcore/libGAL_egl.wl.so ./libGAL_egl.so
-	ln -sfv /usr/lib/galcore/libEGL-wl.so ./libEGL.so.1.0
-	ln -sfv /usr/lib/galcore/libGLESv2-wl.so ./libGLESv2.so.2
-	LDFLAGS="-L$(CURDIR) -L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=wayland -o build-wl
+	# select Vivante WL
+	uauhelper --set vivante-gal /usr/lib/galcore/libGAL-wl.so
+	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=wayland -o build-wl
 	./waf build -o build-wl
 	./waf install -o build-wl --destdir=$(DESTDIR)-wl
 
-	# select vivante-gal = DFB as local alternative
-	ln -sfv /usr/lib/galcore/libGAL-x11.so ./libGAL.so
-	ln -sfv /usr/lib/galcore/libGAL_egl.dri.so ./libGAL_egl.so
-	ln -sfv /usr/lib/galcore/libEGL-x11.so ./libEGL.so.1.0
-	ln -sfv /usr/lib/galcore/libGLESv2-x11.so ./libGLESv2.so.2
-	LDFLAGS="-L$(CURDIR) -L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=x11 -o build-x11
+	# select Vivante X11
+	uauhelper --set vivante-gal /usr/lib/galcore/libGAL-x11.so
+	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=x11 -o build-x11
 	./waf build -o build-x11
 	./waf install -o build-x11 --destdir=$(DESTDIR)-x11
 
