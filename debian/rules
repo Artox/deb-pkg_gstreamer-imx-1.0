@@ -32,12 +32,6 @@ override_dh_auto_install:
 	./waf build -o build-fb
 	./waf install -o build-fb --destdir=$(DESTDIR)-fb
 
-#	# select Vivante DFB
-#	uauhelper --set vivante-gal /usr/lib/galcore/libGAL-dfb.so
-#	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=directfb -o build-dfb
-#	./waf build -o build-dfb
-#	./waf install -o build-dfb --destdir=$(DESTDIR)-dfb
-
 	# select Vivante WL
 	uauhelper --set vivante-gal /usr/lib/galcore/libGAL-wl.so
 	LDFLAGS="-L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=wayland -o build-wl

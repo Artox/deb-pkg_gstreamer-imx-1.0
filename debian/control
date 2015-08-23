@@ -28,17 +28,6 @@ Replaces: gstreamer1.0-imx
 Description: Todo
  T. O. D. O.
 
-#Package: gstreamer1.0-imx-dfb
-#Section: libs
-#Architecture: any
-#Pre-Depends: ${misc:Pre-Depends}
-#Depends: ${shlibs:Depends}, ${misc:Depends}, imx-gpu-viv-dfb
-#Provides: gstreamer1.0-imx
-#Breaks: gstreamer1.0-imx
-#Replaces: gstreamer1.0-imx
-#Description: Todo
-# T. O. D. O.
-
 Package: gstreamer1.0-imx-wl
 Section: libs
 Architecture: any
