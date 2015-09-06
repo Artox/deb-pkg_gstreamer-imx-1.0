@@ -24,7 +24,9 @@ Pre-Depends: ${misc:Pre-Depends}
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
- gstreamer1.0-imx-fb | gstreamer1.0-imx-wl | gstreamer1.0-imx-x11,
+ gstreamer1.0-imx-fb (= ${binary:Version}) | gstreamer1.0-imx-wl (= ${binary:Version}) | gstreamer1.0-imx-x11 (= ${binary:Version}),
+Description: Todo
+ T. O. D. O.
 
 Package: gstreamer1.0-imx-fb
 Section: libs
@@ -33,7 +35,7 @@ Pre-Depends: ${misc:Pre-Depends}
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
- gstreamer1.0-imx,
+ gstreamer1.0-imx (= ${binary:Version}),
  imx-gpu-viv-fb,
 Description: Todo
  T. O. D. O.
@@ -45,7 +47,7 @@ Pre-Depends: ${misc:Pre-Depends}
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
- gstreamer1.0-imx,
+ gstreamer1.0-imx (= ${binary:Version}),
  imx-gpu-viv-wl,
 Description: Todo
  T. O. D. O.
@@ -57,7 +59,34 @@ Pre-Depends: ${misc:Pre-Depends}
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
- gstreamer1.0-imx,
+ gstreamer1.0-imx (= ${binary:Version}),
  imx-gpu-viv-x11,
+Description: Todo
+ T. O. D. O.
+
+Package: gstreamer1.0-imx-fb-dbg
+Architecture: any
+Section: debug
+Depends:
+ ${misc:Depends},
+ gstreamer1.0-imx-fb (= ${binary:Version}),
+Description: Todo
+ T. O. D. O.
+
+Package: gstreamer1.0-imx-wl-dbg
+Architecture: any
+Section: debug
+Depends:
+ ${misc:Depends},
+ gstreamer1.0-imx-wl (= ${binary:Version}),
+Description: Todo
+ T. O. D. O.
+
+Package: gstreamer1.0-imx-x11-dbg
+Architecture: any
+Section: debug
+Depends:
+ ${misc:Depends},
+ gstreamer1.0-imx-x11 (= ${binary:Version}),
 Description: Todo
  T. O. D. O.

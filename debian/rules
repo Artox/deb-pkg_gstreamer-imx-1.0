@@ -61,3 +61,8 @@ override_dh_shlibdeps:
 	dh_shlibdeps -pgstreamer1.0-imx-fb -l/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-fb -- --ignore-missing-info -ximx-gpu-viv-fb -ximx-gpu-viv-dfb -ximx-gpu-viv-x11 -ximx-gpu-viv-wl
 	dh_shlibdeps -pgstreamer1.0-imx-wl -l/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-wl -- --ignore-missing-info -ximx-gpu-viv-fb -ximx-gpu-viv-dfb -ximx-gpu-viv-x11 -ximx-gpu-viv-wl
 	dh_shlibdeps -pgstreamer1.0-imx-x11 -l/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-x11 -- --ignore-missing-info -ximx-gpu-viv-fb -ximx-gpu-viv-dfb -ximx-gpu-viv-x11 -ximx-gpu-viv-wl
+
+override_dh_strip:
+	dh_strip --package=gstreamer1.0-imx-fb --dbg-package=gstreamer1.0-imx-fb-dbg
+	dh_strip --package=gstreamer1.0-imx-wl --dbg-package=gstreamer1.0-imx-wl-dbg
+	dh_strip --package=gstreamer1.0-imx-x11 --dbg-package=gstreamer1.0-imx-x11-dbg
