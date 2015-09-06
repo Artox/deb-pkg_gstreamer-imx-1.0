@@ -44,5 +44,20 @@ override_dh_auto_install:
 	./waf build -o build-x11
 	./waf install -o build-x11 --destdir=$(DESTDIR)-x11
 
+	# move into alternatives subfolders
+	mkdir -p $(DESTDIR)-fb/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-fb/gstreamer-1.0
+	mv $(DESTDIR)-fb/usr/lib/$(DEB_HOST_MULTIARCH)/*.so* $(DESTDIR)-fb/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-fb/
+	mv $(DESTDIR)-fb/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer-1.0/*.so* $(DESTDIR)-fb/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-fb/gstreamer-1.0/
+
+	mkdir -p $(DESTDIR)-wl/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-wl/gstreamer-1.0
+	mv $(DESTDIR)-wl/usr/lib/$(DEB_HOST_MULTIARCH)/*.so* $(DESTDIR)-wl/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-wl/
+	mv $(DESTDIR)-wl/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer-1.0/*.so* $(DESTDIR)-wl/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-wl/gstreamer-1.0/
+
+	mkdir -p $(DESTDIR)-x11/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-x11/gstreamer-1.0
+	mv $(DESTDIR)-x11/usr/lib/$(DEB_HOST_MULTIARCH)/*.so* $(DESTDIR)-x11/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-x11/
+	mv $(DESTDIR)-x11/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer-1.0/*.so* $(DESTDIR)-x11/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-x11/gstreamer-1.0/
+
 override_dh_shlibdeps:
-	dh_shlibdeps -- --ignore-missing-info -ximx-gpu-viv-fb -ximx-gpu-viv-dfb -ximx-gpu-viv-x11 -ximx-gpu-viv-wl
+	dh_shlibdeps -pgstreamer1.0-imx-fb -l/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-fb -- --ignore-missing-info -ximx-gpu-viv-fb -ximx-gpu-viv-dfb -ximx-gpu-viv-x11 -ximx-gpu-viv-wl
+	dh_shlibdeps -pgstreamer1.0-imx-wl -l/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-wl -- --ignore-missing-info -ximx-gpu-viv-fb -ximx-gpu-viv-dfb -ximx-gpu-viv-x11 -ximx-gpu-viv-wl
+	dh_shlibdeps -pgstreamer1.0-imx-x11 -l/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-x11 -- --ignore-missing-info -ximx-gpu-viv-fb -ximx-gpu-viv-dfb -ximx-gpu-viv-x11 -ximx-gpu-viv-wl
