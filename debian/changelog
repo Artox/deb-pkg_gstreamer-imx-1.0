@@ -1,4 +1,11 @@
-gstreamer1.0-imx (0.11.1pkg2) UNRELEASED; urgency=medium
+gstreamer1.0-imx (0.12.0) stable; urgency=medium
+
+  * update
+  * libfslvpuwrap replaced by libimxvpuapi
+
+ -- Josua Mayer <josua@linux.site>  Sat, 09 Jan 2016 13:49:26 +0000
+
+gstreamer1.0-imx (0.11.1pkg2) stable; urgency=medium
 
   * update
 

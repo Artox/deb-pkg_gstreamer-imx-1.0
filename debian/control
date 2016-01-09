@@ -3,17 +3,17 @@ Priority: extra
 Maintainer: Josua Mayer <privacy@not.given>
 Build-Depends: debhelper (>= 9),
  pkg-config,
- uauhelper,
  libgstreamer1.0-dev (>= 1.2.0),
  libgstreamer-plugins-base1.0-dev (>= 1.2.0),
- libfslvpuwrap-dev (>= 1.0.45),
+ libgstreamer-plugins-bad1.0-dev,
  imx-gpu-viv-fb-dev,
  imx-gpu-viv-wl-dev,
  imx-gpu-viv-x11-dev,
  libx11-dev,
  imx-kernel-api,
  libfslcodec-dev,
- libg2d-dev
+ libg2d-dev,
+ libimxvpuapi-dev
 Standards-Version: 3.9.6
 Section: libs
 
