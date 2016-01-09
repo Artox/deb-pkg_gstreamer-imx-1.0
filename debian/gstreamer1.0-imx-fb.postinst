@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 # detect multiarch name
 DEB_HOST_MULTIARCH=$(dpkg-architecture -qDEB_HOST_MULTIARCH)
