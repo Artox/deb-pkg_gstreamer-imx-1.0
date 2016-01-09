@@ -25,8 +25,8 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends},
  gstreamer1.0-imx-fb (= ${binary:Version}) | gstreamer1.0-imx-wl (= ${binary:Version}) | gstreamer1.0-imx-x11 (= ${binary:Version}),
-Description: Todo
- T. O. D. O.
+Description: GStreamer plugins for Freescale i.MX series of SoCs
+ Provides gstreamer plugins which can utilize the hardware accelerators for audio and video that are present in Freescale`s i.MX series of SoCs.
 
 Package: gstreamer1.0-imx-fb
 Section: libs
@@ -37,8 +37,8 @@ Depends:
  ${misc:Depends},
  gstreamer1.0-imx (= ${binary:Version}),
  imx-gpu-viv-fb,
-Description: Todo
- T. O. D. O.
+Description: GStreamer plugins for Freescale i.MX series of SoCs (for Framebuffer)
+ Provides gstreamer plugins which can utilize the hardware accelerators for audio and video that are present in Freescale`s i.MX series of SoCs.
 
 Package: gstreamer1.0-imx-wl
 Section: libs
@@ -49,8 +49,8 @@ Depends:
  ${misc:Depends},
  gstreamer1.0-imx (= ${binary:Version}),
  imx-gpu-viv-wl,
-Description: Todo
- T. O. D. O.
+Description: GStreamer plugins for Freescale i.MX series of SoCs (for Wayland)
+ Provides gstreamer plugins which can utilize the hardware accelerators for audio and video that are present in Freescale`s i.MX series of SoCs.
 
 Package: gstreamer1.0-imx-x11
 Section: libs
@@ -61,8 +61,8 @@ Depends:
  ${misc:Depends},
  gstreamer1.0-imx (= ${binary:Version}),
  imx-gpu-viv-x11,
-Description: Todo
- T. O. D. O.
+Description: GStreamer plugins for Freescale i.MX series of SoCs (for X11)
+ Provides gstreamer plugins which can utilize the hardware accelerators for audio and video that are present in Freescale`s i.MX series of SoCs.
 
 Package: gstreamer1.0-imx-fb-dbg
 Architecture: any
@@ -70,8 +70,8 @@ Section: debug
 Depends:
  ${misc:Depends},
  gstreamer1.0-imx-fb (= ${binary:Version}),
-Description: Todo
- T. O. D. O.
+Description: Debug Symbols for gstreamer1.0-imx (for Framebuffer)
+ Provides the debug symbols to the GStreamer plugins for Freescale i.MX series of SoCs.
 
 Package: gstreamer1.0-imx-wl-dbg
 Architecture: any
@@ -79,8 +79,8 @@ Section: debug
 Depends:
  ${misc:Depends},
  gstreamer1.0-imx-wl (= ${binary:Version}),
-Description: Todo
- T. O. D. O.
+Description: Debug Symbols for gstreamer1.0-imx (for Wayland)
+ Provides the debug symbols to the GStreamer plugins for Freescale i.MX series of SoCs.
 
 Package: gstreamer1.0-imx-x11-dbg
 Architecture: any
@@ -88,5 +88,5 @@ Section: debug
 Depends:
  ${misc:Depends},
  gstreamer1.0-imx-x11 (= ${binary:Version}),
-Description: Todo
- T. O. D. O.
+Description: Debug Symbols for gstreamer1.0-imx (for X11)
+ Provides the debug symbols to the GStreamer plugins for Freescale i.MX series of SoCs.
