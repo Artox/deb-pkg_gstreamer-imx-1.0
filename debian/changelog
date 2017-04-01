@@ -3,7 +3,7 @@ gstreamer1.0-imx (0.12.3) stable; urgency=medium
   * Non-maintainer upload.
   * update to latest release
 
- -- Josua Mayer <josua@localhost>  Fri, 09 Dec 2016 13:02:05 +0100
+ -- Josua Mayer <josua.mayer97@gmail.com>  Fri, 09 Dec 2016 13:02:05 +0100
 
 gstreamer1.0-imx (0.12.2+15+gc537ce9) stable; urgency=medium
 
@@ -11,53 +11,53 @@ gstreamer1.0-imx (0.12.2+15+gc537ce9) stable; urgency=medium
   * update to current git as 0.12.2 does not build 
   * version string generated using `git describe --tags`
 
- -- Josua Mayer <josua@cubox>  Thu, 06 Oct 2016 13:24:41 +0000
+ -- Josua Mayer <josua.mayer97@gmail.com>  Thu, 06 Oct 2016 13:24:41 +0000
 
 gstreamer1.0-imx (0.12.0) stable; urgency=medium
 
   * update
   * libfslvpuwrap replaced by libimxvpuapi
 
- -- Josua Mayer <josua@linux.site>  Sat, 09 Jan 2016 13:49:26 +0000
+ -- Josua Mayer <josua.mayer97@gmail.com>  Sat, 09 Jan 2016 13:49:26 +0000
 
 gstreamer1.0-imx (0.11.1pkg2) stable; urgency=medium
 
   * update
 
- -- Josua Mayer <josua@linux.site>  Sat, 14 Nov 2015 16:02:01 +0000
+ -- Josua Mayer <josua.mayer97@gmail.com>  Sat, 14 Nov 2015 16:02:01 +0000
 
 gstreamer1.0-imx (0.11.1pkg1) stable; urgency=medium
 
   * use update-alternatives
 
- -- Josua Mayer <josua@linux.site>  Sun, 06 Sep 2015 14:36:02 +0000
+ -- Josua Mayer <josua.mayer97@gmail.com>  Sun, 06 Sep 2015 14:36:02 +0000
 
 gstreamer1.0-imx (0.11.1) stable; urgency=medium
 
   * update to 0.11.1
 
- -- Josua Mayer <privacy@not.given>  Thu, 13 Aug 2015 22:09:35 +0800
+ -- Josua Mayer <josua.mayer97@gmail.com>  Thu, 13 Aug 2015 22:09:35 +0800
 
 gstreamer1.0-imx (0.10.2) stable; urgency=medium
 
   * update to 0.10.2
 
- -- Josua Mayer <privacy@not.given>  Sat, 06 Jun 2015 14:12:24 +0800
+ -- Josua Mayer <josua.mayer97@gmail.com>  Sat, 06 Jun 2015 14:12:24 +0800
 
 gstreamer1.0-imx (0.10.0) stable; urgency=medium
 
   * build all windowsys-flavors
 
- -- Josua Mayer <privacy@not.given>  Sat, 23 May 2015 12:41:11 +0200
+ -- Josua Mayer <josua.mayer97@gmail.com>  Sat, 23 May 2015 12:41:11 +0200
 
 gstreamer1.0-imx (0.10.0) unstable; urgency=low
 
   * add audio handling
 
- -- Josua Mayer <privacy@not.given>  Wed, 04 Feb 2015 21:56:23 +0100
+ -- Josua Mayer <josua.mayer97@gmail.com>  Wed, 04 Feb 2015 21:56:23 +0100
 
 gstreamer1.0-imx (0.9.9) unstable; urgency=low
 
   * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
 
- -- Josua Mayer <privacy@not.given>  Sun, 09 Nov 2014 11:40:39 +0100
+ -- Josua Mayer <josua.mayer97@gmail.com>  Sun, 09 Nov 2014 11:40:39 +0100
