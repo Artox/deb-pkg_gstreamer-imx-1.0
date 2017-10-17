@@ -14,7 +14,8 @@ Build-Depends: debhelper (>= 9),
  imx-kernel-api,
  libfslcodec-dev,
  libg2d-dev,
- libimxvpuapi-dev (>= 0.10.3)
+ libimxvpuapi-dev (>= 0.10.3),
+ libwayland-dev,
 Standards-Version: 3.9.6
 Section: libs
 
