@@ -118,7 +118,7 @@ def configure(conf):
 	if conf.options.enable_debug:
 		compiler_flags += ['-O0', '-g3', '-ggdb']
 	else:
-		compiler_flags += ['-O2']
+		compiler_flags += ['-O3']
 
 	add_compiler_flags(conf, conf.env, compiler_flags, 'C', 'C')
 
