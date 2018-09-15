@@ -1,3 +1,9 @@
+gstreamer1.0-imx (0.13.0+1) stable; urgency=medium
+
+  * removed problem with alternatives
+
+ -- Josua Mayer <josua.mayer97@gmail.com>  Sat, 15 Sep 2018 18:56:26 +0200
+
 gstreamer1.0-imx (0.13.0) stable; urgency=medium
 
   * update
