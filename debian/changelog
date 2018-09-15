@@ -1,3 +1,9 @@
+gstreamer1.0-imx (0.12.3+1) stable; urgency=medium
+
+  * fixed broken alternatives
+
+ -- Josua Mayer <josua.mayer97@gmail.com>  Sat, 15 Sep 2018 17:20:19 +0200
+
 gstreamer1.0-imx (0.12.3) stable; urgency=medium
 
   * Non-maintainer upload.
