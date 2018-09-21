@@ -18,6 +18,7 @@ Build-Depends: debhelper (>= 9),
  libwayland-dev,
  libcairo2-dev (>= 1.14.0),
  libpango1.0-dev (>= 1.40.0),
+ libxdamage-dev,
 Standards-Version: 3.9.6
 Section: libs
 
