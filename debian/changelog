@@ -1,3 +1,10 @@
+gstreamer1.0-imx (0.13.0+2) stable; urgency=medium
+
+  * fixed minor build-time issue
+  * create -dev package
+
+ -- Josua Mayer <josua.mayer97@gmail.com>  Fri, 21 Sep 2018 13:22:15 +0200
+
 gstreamer1.0-imx (0.13.0+1) stable; urgency=medium
 
   * removed problem with alternatives
