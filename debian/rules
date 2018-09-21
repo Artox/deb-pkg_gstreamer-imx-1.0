@@ -41,6 +41,24 @@ override_dh_auto_install:
 	./waf build -o build-x11
 	./waf install -o build-x11 --destdir=$(DESTDIR)-x11
 
+	# pick up development files
+	mkdir -p $(DESTDIR)-dev/usr/include
+	mkdir -p $(DESTDIR)-dev/usr/lib/arm-linux-gnueabihf/pkgconfig
+	cp -r $(DESTDIR)-fb/usr/include/gstreamer-1.0 $(DESTDIR)-dev/usr/include/
+	cp -v $(DESTDIR)-fb/usr/lib/arm-linux-gnueabihf/pkgconfig/*.pc $(DESTDIR)-dev/usr/lib/arm-linux-gnueabihf/pkgconfig/
+	cp -sv $(DESTDIR)-fb/usr/lib/arm-linux-gnueabihf/*.so $(DESTDIR)-dev/usr/lib/arm-linux-gnueabihf/
+
+	# now clean up devel files from all backends
+	rm -r $(DESTDIR)-fb/usr/include
+	rm -r $(DESTDIR)-fb/usr/lib/arm-linux-gnueabihf/pkgconfig
+	rm $(DESTDIR)-fb/usr/lib/arm-linux-gnueabihf/*.so
+	rm -r $(DESTDIR)-wl/usr/include
+	rm -r $(DESTDIR)-wl/usr/lib/arm-linux-gnueabihf/pkgconfig
+	rm $(DESTDIR)-wl/usr/lib/arm-linux-gnueabihf/*.so
+	rm -r $(DESTDIR)-x11/usr/include
+	rm -r $(DESTDIR)-x11/usr/lib/arm-linux-gnueabihf/pkgconfig
+	rm $(DESTDIR)-x11/usr/lib/arm-linux-gnueabihf/*.so
+
 	# move into alternatives subfolders
 	mkdir -p $(DESTDIR)-fb/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-fb/gstreamer-1.0
 	mv $(DESTDIR)-fb/usr/lib/$(DEB_HOST_MULTIARCH)/*.so* $(DESTDIR)-fb/usr/lib/$(DEB_HOST_MULTIARCH)/gstreamer1.0-imx-fb/
