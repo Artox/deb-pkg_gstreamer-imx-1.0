@@ -30,16 +30,19 @@ override_dh_auto_install:
 	CFLAGS="-g" LDFLAGS="-L/usr/lib/galcore/fb -L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=fb -o build-fb
 	./waf build -o build-fb
 	./waf install -o build-fb --destdir=$(DESTDIR)-fb
+	cat build/config.log
 
 	# Wayland
 	CFLAGS="-g" LDFLAGS="-L/usr/lib/galcore/wl -L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=wayland -o build-wl
 	./waf build -o build-wl
 	./waf install -o build-wl --destdir=$(DESTDIR)-wl
+	cat build/config.log
 
 	# X11
 	CFLAGS="-g" LDFLAGS="-L/usr/lib/galcore/x11 -L/usr/lib/galcore" ./waf configure $(SARGS) --egl-platform=x11 -o build-x11
 	./waf build -o build-x11
 	./waf install -o build-x11 --destdir=$(DESTDIR)-x11
+	cat build/config.log
 
 	# pick up development files
 	mkdir -p $(DESTDIR)-dev/usr/include
